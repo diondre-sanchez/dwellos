@@ -1,0 +1,250 @@
+// DwellOS core data model — see docs/architecture.md for rationale.
+// MVP hierarchy: User -> Home -> Room -> Asset -> (Document | MaintenancePlan | ServiceEvent)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- Auth (Auth.js / NextAuth Prisma adapter shape) ---
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  homes    Home[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// --- Core domain ---
+
+model Home {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  address   String? // privacy-sensitive; encrypt at rest / restrict in queries
+  buildYear Int?
+  homeType  String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner  User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  rooms  Room[]
+  assets Asset[]
+
+  @@index([ownerId])
+  @@map("homes")
+}
+
+model Room {
+  id     String  @id @default(cuid())
+  homeId String
+  name   String
+  type   String?
+  notes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  home   Home    @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  assets Asset[]
+
+  @@index([homeId])
+  @@map("rooms")
+}
+
+enum LifecycleStatus {
+  ACTIVE
+  NEEDS_ATTENTION
+  RETIRED
+  REPLACED
+}
+
+model Asset {
+  id     String @id @default(cuid())
+  homeId String
+  roomId String?
+
+  // Freeform category (e.g. "HVAC", "Refrigerator") rather than a fixed enum —
+  // the household asset list is open-ended by design (see product doc).
+  category String
+
+  manufacturer  String?
+  productName   String?
+  modelNumber   String?
+  serialNumber  String?
+
+  purchaseDate  DateTime?
+  purchasePrice Decimal?  @db.Decimal(12, 2)
+  retailer      String?
+
+  installer      String?
+  installationDate DateTime?
+
+  warrantyStart      DateTime?
+  warrantyExpiration DateTime?
+
+  expectedServiceLifeYears Int?
+  lifecycleStatus          LifecycleStatus @default(ACTIVE)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  home              Home              @relation(fields: [homeId], references: [id], onDelete: Cascade)
+  room              Room?             @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  documents         Document[]
+  maintenancePlans  MaintenancePlan[]
+  serviceEvents     ServiceEvent[]
+
+  @@index([homeId])
+  @@index([roomId])
+  @@map("assets")
+}
+
+enum DocumentType {
+  MANUAL
+  INSTALLATION_GUIDE
+  RECEIPT
+  WARRANTY
+  SERVICE_RECORD
+  PHOTO
+  OTHER
+}
+
+model Document {
+  id      String       @id @default(cuid())
+  assetId String
+  type    DocumentType
+
+  originalFilename String
+  storageLocation  String // object storage key/URL
+  source           String? // e.g. "user_upload", "manufacturer_lookup"
+
+  uploadDate       DateTime @default(now())
+  parsedStatus     String   @default("pending") // pending | parsed | failed
+  pageCount        Int?
+  metadata         Json?
+
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@map("documents")
+}
+
+enum MaintenanceSource {
+  MANUFACTURER
+  USER
+  SYSTEM
+}
+
+model MaintenancePlan {
+  id      String @id @default(cuid())
+  assetId String
+
+  task     String
+  interval String // e.g. "P90D" (ISO 8601 duration) or human text like "every 3 months"
+
+  source               MaintenanceSource
+  sourceDocumentId     String?
+  sourceDocumentPage   Int?
+
+  lastCompleted DateTime?
+  nextDue       DateTime?
+  notes         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@index([nextDue])
+  @@map("maintenance_plans")
+}
+
+enum WarrantyClaimStatus {
+  NONE
+  PENDING
+  APPROVED
+  DENIED
+  PAID
+}
+
+model ServiceEvent {
+  id      String @id @default(cuid())
+  assetId String
+
+  date            DateTime
+  serviceProvider String?
+  problem         String?
+  resolution      String?
+  cost            Decimal? @db.Decimal(12, 2)
+
+  warrantyClaimStatus WarrantyClaimStatus @default(NONE)
+  partsReplaced       String?
+  notes               String?
+  attachments         Json? // array of document IDs / storage keys
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([assetId])
+  @@map("service_events")
+}
