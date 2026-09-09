@@ -2,7 +2,7 @@
 
 The operating system for your home: a persistent, structured record of every asset in a home (appliances, HVAC, plumbing, etc.) with an AI layer that answers questions grounded in that exact asset's manuals, warranty, and service history.
 
-Working name; concept doc: [`home-digital-twin.md`](https://github.com/diondre-sanchez/idea-lab/blob/main/app_ideas/home-digital-twin.md). Architecture and phase status: [`docs/architecture.md`](docs/architecture.md).
+Working name; original concept doc: [`docs/product-concept.md`](docs/product-concept.md). Architecture and phase status: [`docs/architecture.md`](docs/architecture.md).
 
 ## Stack
 

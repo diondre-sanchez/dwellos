@@ -1,6 +1,6 @@
 # DwellOS — Architecture (Phase 1)
 
-Working name: **DwellOS**. Source concept: [`home-digital-twin.md`](https://github.com/diondre-sanchez/idea-lab/blob/main/app_ideas/home-digital-twin.md) in `idea-lab`.
+Working name: **DwellOS**. Source concept: [`product-concept.md`](product-concept.md) (originally drafted in `idea-lab/app_ideas/`, moved here now that this is an active project).
 
 ## Tech stack
 
