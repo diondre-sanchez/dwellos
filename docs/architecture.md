@@ -90,6 +90,14 @@ Not yet modeled (Phase 3+): document chunks/embeddings for retrieval, household 
 - [x] System architecture (this doc)
 - [x] Core database schema (`prisma/schema.prisma`)
 
-## Next: Phase 2 (Asset platform)
+## Phase 2 status (Asset platform)
 
-Auth wiring, Home/Room/Asset CRUD, document upload to object storage, warranty + maintenance + service-history record-keeping — no AI yet. First runnable migration: `npx prisma migrate dev` against the `docker-compose` Postgres.
+Built as Server Components + Server Actions directly against Prisma (`src/server/*`) rather than a separate REST API layer — idiomatic for this app's App Router and there's no separate client that needs one yet.
+
+- [x] Authentication — Credentials provider (email + password, bcrypt), JWT sessions (`src/auth.ts`). No Prisma adapter wired up since Credentials doesn't support database sessions; `Account`/`Session` tables stay ready for a future OAuth provider. Route protection: `src/proxy.ts` (Next.js 16 renamed Middleware to Proxy) redirects unauthenticated visits, **plus** each protected page/Server Action checks `auth()` itself — Proxy matchers don't cover direct Server Function calls, so it can't be the only guard.
+- [ ] Home management
+- [ ] Room/location management
+- [ ] Asset CRUD
+- [ ] Document upload/storage
+- [ ] Maintenance records
+- [ ] Service history

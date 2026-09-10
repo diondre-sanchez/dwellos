@@ -18,6 +18,7 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
+  passwordHash  String? // set for credentials-based accounts; null if OAuth-only
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
