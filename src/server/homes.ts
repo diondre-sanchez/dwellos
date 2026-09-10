@@ -32,6 +32,26 @@ export async function getHomeForUser(userId: string, homeId: string) {
   return home;
 }
 
+export async function updateHome(
+  userId: string,
+  homeId: string,
+  input: { name: string; address?: string; buildYear?: number; homeType?: string; notes?: string },
+) {
+  const home = await db.home.findUnique({ where: { id: homeId } });
+  if (!home || home.ownerId !== userId) throw new HomeNotFoundError();
+
+  return db.home.update({
+    where: { id: homeId },
+    data: {
+      name: input.name.trim(),
+      address: input.address?.trim() || null,
+      buildYear: input.buildYear ?? null,
+      homeType: input.homeType?.trim() || null,
+      notes: input.notes?.trim() || null,
+    },
+  });
+}
+
 export async function deleteHome(userId: string, homeId: string) {
   const home = await db.home.findUnique({ where: { id: homeId } });
   if (!home || home.ownerId !== userId) throw new HomeNotFoundError();
