@@ -95,7 +95,8 @@ Not yet modeled (Phase 3+): document chunks/embeddings for retrieval, household 
 Built as Server Components + Server Actions directly against Prisma (`src/server/*`) rather than a separate REST API layer — idiomatic for this app's App Router and there's no separate client that needs one yet.
 
 - [x] Authentication — Credentials provider (email + password, bcrypt), JWT sessions (`src/auth.ts`). No Prisma adapter wired up since Credentials doesn't support database sessions; `Account`/`Session` tables stay ready for a future OAuth provider. Route protection: `src/proxy.ts` (Next.js 16 renamed Middleware to Proxy) redirects unauthenticated visits, **plus** each protected page/Server Action checks `auth()` itself — Proxy matchers don't cover direct Server Function calls, so it can't be the only guard.
-- [ ] Home management
+- [x] Home management — CRUD for `Home` scoped to the signed-in owner (`src/server/homes.ts`; `ownerId` is part of every query's `where`, not checked after the fact). `/homes` lists a user's homes plus an add form; `/homes/[id]` edits or deletes one. Server Actions call `revalidatePath` before `redirect` — without it Next.js's client Router Cache keeps serving the pre-mutation `/homes` list on the client-side navigation the redirect triggers.
+- [ ] Room/location management
 - [ ] Room/location management
 - [ ] Asset CRUD
 - [ ] Document upload/storage
