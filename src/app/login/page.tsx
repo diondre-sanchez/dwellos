@@ -1,19 +1,25 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { loginAction } from "./actions";
 
+function RegisteredNotice() {
+  const params = useSearchParams();
+  if (params.get("registered") !== "1") return null;
+  return <p className="text-sm text-green-700">Account created — sign in below.</p>;
+}
+
 export default function LoginPage() {
   const [error, formAction, pending] = useActionState(loginAction, null);
-  const params = useSearchParams();
-  const justRegistered = params.get("registered") === "1";
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 p-6">
       <h1 className="text-2xl font-semibold">Sign in to DwellOS</h1>
-      {justRegistered && <p className="text-sm text-green-700">Account created — sign in below.</p>}
+      <Suspense fallback={null}>
+        <RegisteredNotice />
+      </Suspense>
       <form action={formAction} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
           Email
